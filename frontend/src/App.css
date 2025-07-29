@@ -1,1 +1,7 @@
 @import "tailwindcss";
+
+:root {
+  font-family: "Inter";
+
+  @apply bg-gray-900;
+}
