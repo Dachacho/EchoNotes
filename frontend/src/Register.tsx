@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 
 export default function Register() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -25,7 +27,7 @@ export default function Register() {
         body: JSON.stringify({ email, username, password }),
       });
       if (response.ok) {
-        console.log("registered");
+        navigate("/login");
       } else {
         setRegisterError("Failed to Register");
       }
@@ -37,7 +39,7 @@ export default function Register() {
 
   return (
     <>
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-tl from-gray-950 via-indigo-900 to-indigo-800/20">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="w-full max-w-md p-10 rounded-xl shadow-2xl bg-gray-800 border border-gray-700 mb-8">
           <h2 className="text-center font-bold tracking text-white text-2xl mb-8">
             Register

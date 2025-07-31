@@ -5,3 +5,7 @@
 
   @apply bg-gray-900;
 }
+
+body {
+  @apply bg-gradient-to-tl from-gray-950 via-indigo-900 to-indigo-800/20;
+}

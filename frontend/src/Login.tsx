@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Login() {
+  const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
@@ -19,7 +20,7 @@ export default function Login() {
         const data = await response.json();
         localStorage.setItem("token", data.access);
 
-        console.log(data.access);
+        navigate("/dashboard");
       } else {
         setError("Login Failed");
       }
@@ -31,7 +32,7 @@ export default function Login() {
 
   return (
     <>
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-tl from-gray-950 via-indigo-900 to-indigo-800/20">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="w-full max-w-md p-10 rounded-xl shadow-2xl bg-gray-800 border border-gray-700 mb-8">
           <h2 className="text-center font-bold tracking text-white text-2xl mb-8">
             Login
