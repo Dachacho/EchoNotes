@@ -3,11 +3,14 @@ from rest_framework import viewsets
 from .models import Note, Folder, Tag
 from .serializers import NoteSerializer, FolderSerializer, TagSerializer
 from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
 
 # Create your views here.
 class NoteViewSet(viewsets.ModelViewSet):
     serializer_class = NoteSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['folder']
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -18,6 +21,8 @@ class NoteViewSet(viewsets.ModelViewSet):
 class FolderViewSet(viewsets.ModelViewSet):
     serializer_class = FolderSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['parent']
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

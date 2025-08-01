@@ -17,14 +17,34 @@ export default function Workspace() {
 
   const { id } = useParams();
 
-  const [folders, setFolders] = useState([
-    { id: 1, name: "Inbox" },
-    { id: 2, name: "Projects" },
-  ]);
-  const [notes, setNotes] = useState([
-    { id: 1, folderId: 1, name: "Welcome.md", content: "content1" },
-    { id: 2, folderId: 2, name: "ProjectPlan.md", content: "content2" },
-  ]);
+  type Folder = { id: number; name: string };
+  type Note = { id: number; title: string; folder: number; content: string };
+
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [workspace, setWorkspace] = useState<Folder | null>(null);
+
+  // Move fetchAllNotes outside of useEffect so it can be reused
+  const fetchAllNotes = async () => {
+    let allNotes: Note[] = [];
+    for (const folder of folders) {
+      const res = await axios.get(
+        `http://localhost:8000/api/notes/?folder=${folder.id}`,
+        config
+      );
+      allNotes = allNotes.concat(res.data.results);
+    }
+    setNotes(allNotes);
+  };
+
+  useEffect(() => {
+    if (folders.length > 0) {
+      fetchAllNotes();
+    } else {
+      setNotes([]);
+    }
+    // eslint-disable-next-line
+  }, [folders]);
 
   const selectedNote = notes.find((note) => note.id === selectedNoteId);
 
@@ -32,16 +52,16 @@ export default function Workspace() {
     async function fetchData() {
       try {
         const foldersRes = await axios.get(
-          "http://localhost:8000/api/folders/",
+          `http://localhost:8000/api/folders/?parent=${id}`,
           config
         );
         setFolders(foldersRes.data.results);
 
-        const notesRes = await axios.get(
-          "http://localhost:8000/api/notes/",
-          config
-        );
-        setNotes(notesRes.data.results);
+        // const notesRes = await axios.get(
+        //   `http://localhost:8000/api/notes/?folder=${id}`,
+        //   config
+        // );
+        // setNotes(notesRes.data.results);
       } catch (err) {
         console.error(err);
       }
@@ -59,14 +79,17 @@ export default function Workspace() {
     const name = prompt("folder name: ");
     if (!name) return;
     try {
-      const res = await axios.post(
+      await axios.post(
         "http://localhost:8000/api/folders/",
-        {
-          name,
-        },
+        { name, parent: id },
         config
       );
-      setFolders([...folders, res.data]);
+      //refetch
+      const foldersRes = await axios.get(
+        `http://localhost:8000/api/folders/?parent=${id}`,
+        config
+      );
+      setFolders(foldersRes.data.results);
     } catch (err) {
       console.log(err);
     }
@@ -76,25 +99,49 @@ export default function Workspace() {
     const name = prompt("Note name: ");
     if (!name) return;
     try {
-      const res = await axios.post(
-        "http://localhost:8000/api/Notes/",
+      await axios.post(
+        "http://localhost:8000/api/notes/",
         {
-          name,
-          folderId,
-          content: "",
+          title: name,
+          folder: folderId,
+          content: "New Note",
+          tags: [],
         },
         config
       );
-      setNotes([...notes, res.data]);
+      // Now this will work since fetchAllNotes is accessible
+      await fetchAllNotes();
     } catch (err) {
-      console.log(err);
+      if (axios.isAxiosError(err)) {
+        console.log("Add note error:", err.response?.data);
+        alert(JSON.stringify(err.response?.data)); // Show the error in the UI
+      } else {
+        console.log(err);
+      }
     }
   };
+
+  useEffect(() => {
+    async function fetchWorkspace() {
+      try {
+        const res = await axios.get(
+          `http://localhost:8000/api/folders/${id}/`,
+          config
+        );
+        setWorkspace(res.data);
+      } catch (err) {
+        console.log(err);
+      }
+    }
+    fetchWorkspace();
+  }, [id]);
 
   return (
     <div className="w-full min-h-screen flex">
       <div className="w-64 bg-gray-800 border-r border-gray-700 pl-2">
-        <h1 className="text-center text-gray-200">workspace {id}</h1>
+        <h1 className="text-center text-gray-200">
+          {workspace ? workspace.name : "loading..."}
+        </h1>
         <button onClick={handleAddFolder}> +Folder</button>
         <ul>
           {folders.map((folder) => (
@@ -109,14 +156,14 @@ export default function Workspace() {
                   +Notes
                 </button>
                 {notes
-                  .filter((note) => note.folderId === folder.id)
+                  .filter((note) => note.folder === folder.id)
                   .map((note) => (
                     <li
                       key={note.id}
                       className="text-gray-400"
                       onClick={() => SetSelectedNoteId(note.id)}
                     >
-                      {note.name}
+                      {note.title}
                     </li>
                   ))}
               </ul>
@@ -129,7 +176,7 @@ export default function Workspace() {
         {selectedNote ? (
           <div>
             <h2 className="font-bold text-xl text-gray-200 mb-4">
-              {selectedNote.name}
+              {selectedNote.title}
             </h2>
             <div className="flex gap-2 mb-4">
               <button
